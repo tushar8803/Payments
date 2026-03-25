@@ -69,6 +69,7 @@ VALUES
         }
 
         $appointment_id = mysqli_insert_id($conn);
+        $_SESSION['inserted_appointment_id'] = $appointment_id;
         echo "<br>";
         // echo $appointment_id;
         echo '<a href="index.php">Home Page</a>';
@@ -87,6 +88,16 @@ VALUES
 
         if (!mysqli_query($conn, $sql2)) {
             throw new Exception(mysqli_error($conn));
+        }
+
+        $services = $_SESSION['selected_services'];
+       
+        foreach ($services as $service_id) {
+            $sql3 = "INSERT INTO appointments_services (appointment_id, service_id) 
+              VALUES ('$appointment_id', '$service_id')";
+            if (!mysqli_query($conn, $sql3)) {
+                throw new Exception(mysqli_error($conn));
+            }
         }
 
 
