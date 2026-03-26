@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="assets/css/animations.css">
+    <link rel="stylesheet" href="assets/css/auth.css">
     <link rel="stylesheet" href="assets/css/main.css">
-    <link rel="stylesheet" href="assets/css/login.css">
+    <!-- <link rel="stylesheet" href="assets/css/login.css"> -->
 
     <title>Login</title>
 
@@ -37,107 +37,147 @@
 
     if ($_POST) {
 
-        $identifier = $_POST['useridentifier'];
-        $password = $_POST['userpassword'];
+    $identifier = $_POST['useridentifier'];
+    $password = $_POST['userpassword'];
 
-        $error = '<label for="promter" class="form-label"></label>';
+    $error = '<label class="form-label"></label>';
 
-        // First check if the identifier is an email in the webuser table
-        $result = $conn->query("select * from users where email='$identifier'");
-        $result2 = $conn->query("select * from users where phone_number='$identifier'");
+    $result = $conn->query("SELECT * FROM users WHERE email='$identifier' OR phone_number='$identifier'");
 
+    if ($result->num_rows > 0) {
 
-        if ($result->num_rows == 1) {
-            // If it's an email, proceed with the original login flow
-            $utype = $result->fetch_assoc()['role'];   //fetching the value of usertype from the 
-            // row stored in $result
+        $user = $result->fetch_assoc();
 
-            /* IMPORTANT */
-            // checking which type of user trying to login(user/admin)
-            if ($utype == 'customer') {
-                $checker = $conn->query("select * from users where email='$identifier' and password='$password'");
-                if ($checker->num_rows == 1) {
-                    $_SESSION['user'] = $identifier;
-                    $_SESSION['usertype'] = 'customer';
+        if (password_verify($password, $user['password'])) {
 
-                    $result = $conn->query("select id from users where email='$identifier'");
-                    $user_id = mysqli_fetch_assoc($result);
-                    $user_id = $row['id'];
-                    $_SESSION['user_id'] = $user_id;
+            $_SESSION['user'] = $identifier;
+            $_SESSION['usertype'] = $user['role'];
+            $_SESSION['user_id'] = $user['id'];
 
-                    header('location:user/select-service.php');
-                } else {
-                    $error = '<label for="promter" class="form-label" style="color:rgb(255, 62, 62);text-align:center;">Wrong credentials: Invalid email or password</label>';
-                }
-            } elseif ($utype == 'admin') {
-                $checker = $conn->query("select * from users where email='$identifier' and password='$password'");
-                if ($checker->num_rows == 1) {
-                    $_SESSION['user'] = $identifier;
-                    $_SESSION['usertype'] = 'admin';
-                    header('location:admin/index.php');
-                } else {
-                    $error = '<label for="promter" class="form-label" style="color:rgb(255, 62, 62);text-align:center;">Wrong credentials: Invalid email or password</label>';
-                }
-            } elseif ($utype == 'staff') {
-                $checker = $conn->query("select * from users where email='$identifier' and password='$password'");
-                if ($checker->num_rows == 1) {
-                    $_SESSION['user'] = $identifier;
-                    $_SESSION['usertype'] = 'staff';
-                    header('location: staff/index.php');
-                } else {
-                    $error = '<label for="promter" class="form-label" style="color:rgb(255, 62, 62);text-align:center;">Wrong credentials: Invalid email or password</label>';
-                }
+            if ($user['role'] == 'customer') {
+                header('location:user/select-service.php');
+                exit();
+            } elseif ($user['role'] == 'admin') {
+                header('location:admin/index.php');
+                exit();
+            } elseif ($user['role'] == 'staff') {
+                header('location:staff/index.php');
+                exit();
             }
-        } elseif ($result2->num_rows == 1) {
-            // If it's an email, proceed with the original login flow
-            $utype = $result2->fetch_assoc()['role'];   //fetching the value of usertype from the 
-            // row stored in $result
 
-            /* IMPORTANT */
-            // checking which type of user trying to login(user/admin)
-            if ($utype == 'customer') {
-                $checker = $conn->query("select * from users where phone_number='$identifier' and password='$password'");
-                if ($checker->num_rows == 1) {
-                    $_SESSION['user'] = $identifier;
-                    $_SESSION['usertype'] = 'customer';
-
-                    $result = $conn->query("select id from users where phone_number='$identifier'");
-                    $row = mysqli_fetch_assoc($result);
-                    $user_id = $row['id'];
-                    $_SESSION['user_id'] = $user_id;
-
-                    header('location:user/select-service.php');
-                } else {
-                    $error = '<label for="promter" class="form-label" style="color:rgb(255, 62, 62);text-align:center;">Wrong credentials: Invalid email or password</label>';
-                }
-            } elseif ($utype == 'admin') {
-                $checker = $conn->query("select * from users where phone_number='$identifier' and password='$password'");
-                if ($checker->num_rows == 1) {
-                    $_SESSION['user'] = $identifier;
-                    $_SESSION['usertype'] = 'admin';
-                    header('location:admin/index.php');
-                } else {
-                    $error = '<label for="promter" class="form-label" style="color:rgb(255, 62, 62);text-align:center;">Wrong credentials: Invalid email or password</label>';
-                }
-            } elseif ($utype == 'staff') {
-                $checker = $conn->query("select * from users where phone_number='$identifier' and password='$password'");
-                if ($checker->num_rows == 1) {
-                    $_SESSION['user'] = $identifier;
-                    $_SESSION['usertype'] = 'staff';
-                    header('location: staff/index.php');
-                } else {
-                    $error = '<label for="promter" class="form-label" style="color:rgb(255, 62, 62);text-align:center;">Wrong credentials: Invalid email or password</label>';
-                }
-            }
         } else {
-            $error = '<label for="promter" class="form-label" 
-   style="color:rgb(255, 62, 62);text-align:center;">
-   Wrong credentials: Invalid email or password
-   </label>';
+            $error = '<label class="form-label" style="color:red;">Invalid credentials</label>';
         }
+
     } else {
-        $error = '<label for="promter" class="form-label">&nbsp;</label>';
+        $error = '<label class="form-label" style="color:red;">Invalid credentials</label>';
     }
+
+} else {
+    $error = '<label class="form-label">&nbsp;</label>';
+}
+
+
+        // $password = $_POST['userpassword'];
+
+        // $error = '<label for="promter" class="form-label"></label>';
+
+        // // First check if the identifier is an email in the webuser table
+        // $result = $conn->query("select * from users where email='$identifier'");
+        // $result2 = $conn->query("select * from users where phone_number='$identifier'");
+
+
+        // if ($result->num_rows == 1) {
+        //     // If it's an email, proceed with the original login flow
+        //     $utype = $result->fetch_assoc()['role'];   //fetching the value of usertype from the 
+        //     // row stored in $result
+
+        //     /* IMPORTANT */
+        //     // checking which type of user trying to login(user/admin)
+        //     if ($utype == 'customer') {
+        //         $checker = $conn->query("select * from users where email='$identifier' and password='$password'");
+        //         if ($checker->num_rows == 1) {
+        //             $_SESSION['user'] = $identifier;
+        //             $_SESSION['usertype'] = 'customer';
+
+        //             $result = $conn->query("select id from users where email='$identifier'");
+        //             $row = mysqli_fetch_assoc($result);
+        //             $user_id = $row['id'];
+        //             $_SESSION['user_id'] = $user_id;
+
+        //             header('location:user/select-service.php');
+        //         } else {
+        //             $error = '<label for="promter" class="form-label" style="color:rgb(255, 62, 62);text-align:center;">Wrong credentials: Invalid email or password</label>';
+        //         }
+        //     } elseif ($utype == 'admin') {
+        //         $checker = $conn->query("select * from users where email='$identifier' and password='$password'");
+        //         if ($checker->num_rows == 1) {
+        //             $_SESSION['user'] = $identifier;
+        //             $_SESSION['usertype'] = 'admin';
+        //             header('location:admin/index.php');
+        //         } else {
+        //             $error = '<label for="promter" class="form-label" style="color:rgb(255, 62, 62);text-align:center;">Wrong credentials: Invalid email or password</label>';
+        //         }
+        //     } elseif ($utype == 'staff') {
+        //         $checker = $conn->query("select * from users where email='$identifier' and password='$password'");
+        //         if ($checker->num_rows == 1) {
+        //             $_SESSION['user'] = $identifier;
+        //             $_SESSION['usertype'] = 'staff';
+        //             header('location: staff/index.php');
+        //         } else {
+        //             $error = '<label for="promter" class="form-label" style="color:rgb(255, 62, 62);text-align:center;">Wrong credentials: Invalid email or password</label>';
+        //         }
+        //     }
+        // } elseif ($result2->num_rows == 1) {
+        //     // If it's an email, proceed with the original login flow
+        //     $utype = $result2->fetch_assoc()['role'];   //fetching the value of usertype from the 
+        //     // row stored in $result
+
+        //     /* IMPORTANT */
+        //     // checking which type of user trying to login(user/admin)
+        //     if ($utype == 'customer') {
+        //         $checker = $conn->query("select * from users where phone_number='$identifier' and password='$password'");
+        //         if ($checker->num_rows == 1) {
+        //             $_SESSION['user'] = $identifier;
+        //             $_SESSION['usertype'] = 'customer';
+
+        //             $result = $conn->query("select id from users where phone_number='$identifier'");
+        //             $row = mysqli_fetch_assoc($result);
+        //             $user_id = $row['id'];
+        //             $_SESSION['user_id'] = $user_id;
+
+        //             header('location:user/select-service.php');
+        //         } else {
+        //             $error = '<label for="promter" class="form-label" style="color:rgb(255, 62, 62);text-align:center;">Wrong credentials: Invalid email or password</label>';
+        //         }
+        //     } elseif ($utype == 'admin') {
+        //         $checker = $conn->query("select * from users where phone_number='$identifier' and password='$password'");
+        //         if ($checker->num_rows == 1) {
+        //             $_SESSION['user'] = $identifier;
+        //             $_SESSION['usertype'] = 'admin';
+        //             header('location:admin/index.php');
+        //         } else {
+        //             $error = '<label for="promter" class="form-label" style="color:rgb(255, 62, 62);text-align:center;">Wrong credentials: Invalid email or password</label>';
+        //         }
+        //     } elseif ($utype == 'staff') {
+        //         $checker = $conn->query("select * from users where phone_number='$identifier' and password='$password'");
+        //         if ($checker->num_rows == 1) {
+        //             $_SESSION['user'] = $identifier;
+        //             $_SESSION['usertype'] = 'staff';
+        //             header('location: staff/index.php');
+        //         } else {
+        //             $error = '<label for="promter" class="form-label" style="color:rgb(255, 62, 62);text-align:center;">Wrong credentials: Invalid email or password</label>';
+        //         }
+        //     } }
+//          else {
+//             $error = '<label for="promter" class="form-label" 
+//    style="color:rgb(255, 62, 62);text-align:center;">
+//    Wrong credentials: Invalid email or password
+//    </label>';
+//         }
+//     } else {
+//         $error = '<label for="promter" class="form-label">&nbsp;</label>';
+//     }
 
 
     ?>
